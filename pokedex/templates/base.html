@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>{% block title %}Pokédex{% endblock %}</title>
+        <!-- Favicon-->
+        <link rel="icon" type="image/x-icon" href="{% static 'pokedex/assets/favicon.ico' %}" />
+        <!-- Bootstrap icons-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="{% static 'pokedex/css/styles.css' %}" rel="stylesheet" />
+        {% block extra_css %}{% endblock %}
+    </head>
+    <body>
+        <!-- Navigation-->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container px-4 px-lg-5">
+                <a class="navbar-brand" href="{% url 'home' %}">Pokédex</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'home' %}">Accueil</a></li>
+                        {% if user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'team_list' %}">Mes Équipes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'battle' %}">Combat</a></li>
+                        {% endif %}
+                        {% block nav_items %}{% endblock %}
+                    </ul>
+                    <form class="d-flex me-3" method="GET" action="{% url 'home' %}">
+                        <input type="text" name="search" class="form-control me-2" 
+                               placeholder="Rechercher un Pokémon..." 
+                               value="{{ search_query }}"
+                               aria-label="Rechercher"
+                               style="min-width: 250px;">
+                        <button class="btn btn-outline-dark me-2" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        {% if search_query %}
+                        <a href="{% url 'home' %}" class="btn btn-outline-danger">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                        {% endif %}
+                    </form>
+                    <div class="d-flex">
+                        {% if user.is_authenticated %}
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Déconnexion</a></li>
+                            </ul>
+                        </div>
+                        {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">Connexion</a>
+                        <a href="{% url 'register' %}" class="btn btn-primary">Inscription</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Content -->
+        {% block content %}{% endblock %}
+
+        <!-- Footer -->
+        <footer class="py-5 bg-dark">
+            <div class="container"><p class="m-0 text-center text-white">Copyright &copy; Pokédex EPSI {% now "Y" %}</p></div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="{% static 'pokedex/js/scripts.js' %}"></script>
+        {% block extra_js %}{% endblock %}
+    </body>
+</html>

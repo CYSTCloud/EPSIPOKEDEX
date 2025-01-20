@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Combat Pokémon{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-4">Combat Pokémon</h1>
+            <p class="lead">Choisissez votre équipe et combattez !</p>
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if not teams %}
+    <div class="alert alert-info">
+        Vous devez d'abord créer une équipe ! <a href="{% url 'team_list' %}">Aller aux Équipes</a>
+    </div>
+    {% else %}
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Votre Équipe</h5>
+                </div>
+                <div class="card-body">
+                    <select class="form-select mb-3" id="teamSelect">
+                        <option value="">Sélectionnez votre équipe...</option>
+                        {% for team in teams %}
+                        <option value="{{ team.id }}">{{ team.name }} ({{ team.pokemon.count }} Pokémon)</option>
+                        {% endfor %}
+                    </select>
+                    <div id="yourTeamDisplay" class="d-none">
+                        <div class="pokemon-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Équipe Adverse</h5>
+                </div>
+                <div class="card-body">
+                    <div id="opponentTeamDisplay" class="d-none">
+                        <div class="pokemon-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <button id="startBattle" class="btn btn-primary btn-lg" disabled>Commencer le Combat</button>
+    </div>
+
+    <!-- Modal Résultats du Combat -->
+    <div class="modal fade" id="battleResultModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Résultats du Combat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="battleResults"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const teamSelect = document.getElementById('teamSelect');
+    const startBattle = document.getElementById('startBattle');
+    const yourTeamDisplay = document.getElementById('yourTeamDisplay');
+    const opponentTeamDisplay = document.getElementById('opponentTeamDisplay');
+    const battleResultModal = new bootstrap.Modal(document.getElementById('battleResultModal'));
+    
+    teamSelect.addEventListener('change', function() {
+        if (this.value) {
+            fetch(`/battle/team/${this.value}/`)
+                .then(response => response.json())
+                .then(data => {
+                    displayTeam(data.team, yourTeamDisplay);
+                    displayTeam(data.opponent, opponentTeamDisplay);
+                    startBattle.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Échec du chargement des équipes. Veuillez réessayer.');
+                });
+        } else {
+            yourTeamDisplay.classList.add('d-none');
+            opponentTeamDisplay.classList.add('d-none');
+            startBattle.disabled = true;
+        }
+    });
+
+    startBattle.addEventListener('click', function() {
+        const teamId = teamSelect.value;
+        startBattle.disabled = true;
+        startBattle.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Combat en cours...';
+
+        fetch(`/battle/start/${teamId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultHtml = `
+                <h4 class="text-center mb-4">${data.winner} Gagne !</h4>
+                <div class="battle-log">
+                    ${data.log.map(entry => `<p>${entry}</p>`).join('')}
+                </div>
+            `;
+            document.getElementById('battleResults').innerHTML = resultHtml;
+            battleResultModal.show();
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Le combat a échoué. Veuillez réessayer.');
+        })
+        .finally(() => {
+            startBattle.disabled = false;
+            startBattle.innerHTML = 'Commencer le Combat';
+        });
+    });
+
+    function displayTeam(team, container) {
+        const html = team.pokemon.map(pokemon => `
+            <div class="d-flex align-items-center mb-2">
+                <img src="${pokemon.sprite_url}" alt="${pokemon.name}" style="width: 50px;">
+                <span class="ms-2">${pokemon.name}</span>
+                <div class="ms-auto">
+                    <small class="text-muted">
+                        PV: ${pokemon.hp} | ATQ: ${pokemon.attack} | DEF: ${pokemon.defense}
+                    </small>
+                </div>
+            </div>
+        `).join('');
+        
+        container.querySelector('.pokemon-list').innerHTML = html;
+        container.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

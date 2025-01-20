@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mes Équipes Pokémon{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-4">Mes Équipes Pokémon</h1>
+            <p class="lead">Créez et gérez vos équipes Pokémon</p>
+        </div>
+        <div class="col-auto align-self-center">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+                <i class="bi bi-plus-lg"></i> Créer une Équipe
+            </button>
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for team in teams %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ team.name }}</h5>
+                    <p class="card-text text-muted">Créée le {{ team.created_at|date:"d/m/Y" }}</p>
+                    
+                    <div class="pokemon-list">
+                        {% for pokemon in team.pokemon.all|slice:":5" %}
+                        <div class="pokemon-item mb-2 d-flex align-items-center">
+                            <img src="{{ pokemon.sprite_url }}" alt="{{ pokemon.name }}" class="me-2" style="width: 50px;">
+                            <span>{{ pokemon.name|title }}</span>
+                            <button class="btn btn-sm btn-outline-danger ms-auto remove-pokemon" 
+                                    data-team-id="{{ team.id }}" 
+                                    data-pokemon-id="{{ pokemon.id }}"
+                                    title="Retirer de l'équipe">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if team.pokemon.count < 5 %}
+                        <button class="btn btn-outline-primary w-100 add-pokemon" 
+                                data-team-id="{{ team.id }}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#addPokemonModal">
+                            <i class="bi bi-plus"></i> Ajouter un Pokémon
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-danger btn-sm float-end delete-team" 
+                            data-team-id="{{ team.id }}"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#deleteTeamModal">
+                        <i class="bi bi-trash"></i> Supprimer l'Équipe
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                Vous n'avez pas encore créé d'équipe. Cliquez sur le bouton "Créer une Équipe" pour commencer !
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal Création d'Équipe -->
+<div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTeamModalLabel">Créer une Nouvelle Équipe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <form method="POST" action="{% url 'create_team' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="teamName" class="form-label">Nom de l'Équipe</label>
+                        <input type="text" class="form-control" id="teamName" name="name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajout de Pokémon -->
+<div class="modal fade" id="addPokemonModal" tabindex="-1" aria-labelledby="addPokemonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPokemonModalLabel">Ajouter un Pokémon à l'Équipe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="pokemonSearch" placeholder="Rechercher un Pokémon...">
+                </div>
+                <div id="pokemonList" class="row row-cols-2 row-cols-md-3 g-3">
+                    <!-- Les Pokémon seront chargés ici dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Suppression d'Équipe -->
+<div class="modal fade" id="deleteTeamModal" tabindex="-1" aria-labelledby="deleteTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteTeamModalLabel">Supprimer l'Équipe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                Êtes-vous sûr de vouloir supprimer cette équipe ? Cette action est irréversible.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteTeamForm" method="POST" action="{% url 'delete_team' 0 %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion de la suppression d'équipe
+    const deleteTeamModal = document.getElementById('deleteTeamModal');
+    deleteTeamModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const teamId = button.getAttribute('data-team-id');
+        const form = deleteTeamModal.querySelector('#deleteTeamForm');
+        form.action = form.action.replace('/0', `/${teamId}`);
+    });
+
+    // Gestion de la recherche de Pokémon
+    const pokemonSearch = document.getElementById('pokemonSearch');
+    const pokemonList = document.getElementById('pokemonList');
+    let currentTeamId = null;
+
+    document.querySelectorAll('.add-pokemon').forEach(button => {
+        button.addEventListener('click', function() {
+            currentTeamId = this.getAttribute('data-team-id');
+        });
+    });
+
+    pokemonSearch.addEventListener('input', debounce(function() {
+        const searchTerm = this.value.trim();
+        if (searchTerm.length < 2) return;
+
+        fetch(`/api/pokemon/search?q=${encodeURIComponent(searchTerm)}`)
+            .then(response => response.json())
+            .then(data => {
+                pokemonList.innerHTML = data.map(pokemon => `
+                    <div class="col">
+                        <div class="card">
+                            <img src="${pokemon.sprite_url}" class="card-img-top" alt="${pokemon.name}">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">${pokemon.name}</h5>
+                                <button class="btn btn-primary btn-sm add-to-team" 
+                                        data-pokemon-id="${pokemon.id}"
+                                        onclick="addPokemonToTeam(${currentTeamId}, ${pokemon.id})">
+                                    Ajouter à l'Équipe
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                pokemonList.innerHTML = '<div class="col-12"><div class="alert alert-danger">Erreur lors de la recherche. Veuillez réessayer.</div></div>';
+            });
+    }, 300));
+});
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function addPokemonToTeam(teamId, pokemonId) {
+    fetch(`/teams/${teamId}/add_pokemon/${pokemonId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Échec de l\'ajout du Pokémon à l\'équipe');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Échec de l\'ajout du Pokémon à l\'équipe. Veuillez réessayer.');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

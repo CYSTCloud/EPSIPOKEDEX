@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ pokemon.name }} - Pokedex{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Pokemon Image -->
+        <div class="col-md-6 text-center">
+            <img src="{{ pokemon.sprite_url }}" alt="{{ pokemon.name }}" class="img-fluid mb-3" style="width: 300px;">
+            <h1 class="display-4">{{ pokemon.name }}</h1>
+            <div class="mb-3">
+                {% for type in pokemon.types %}
+                <span class="badge bg-primary fs-5 me-2">{{ type }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Pokemon Stats -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Stats</h3>
+                    {% for stat_name, stat_value in pokemon.stats.items %}
+                    <div class="mb-3">
+                        <label class="form-label text-capitalize">{{ stat_name }}</label>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: {{ stat_value }}%"
+                                aria-valuenow="{{ stat_value }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ stat_value }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="mt-4">
+                        <h4>Physical Characteristics</h4>
+                        <p><strong>Height:</strong> {{ pokemon.height|floatformat:1 }} m</p>
+                        <p><strong>Weight:</strong> {{ pokemon.weight|floatformat:1 }} kg</p>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                    <div class="mt-4">
+                        <button class="btn btn-primary" onclick="showAddToTeamModal({{ pokemon.pokemon_id }})">
+                            Add to Team
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add to Team Modal -->
+{% if user.is_authenticated %}
+<div class="modal fade" id="addToTeamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add to Team</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <select id="teamSelect" class="form-select mb-3">
+                    {% for team in user.team_set.all %}
+                    <option value="{{ team.id }}">{{ team.name }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary" onclick="createNewTeam()">Create New Team</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="addToTeam()">Add to Team</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedPokemonId = {{ pokemon.pokemon_id }};
+
+function createNewTeam() {
+    const teamName = prompt('Enter team name:');
+    if (teamName) {
+        fetch('{% url "create_team" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `name=${encodeURIComponent(teamName)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            }
+        });
+    }
+}
+
+function addToTeam() {
+    const teamId = document.getElementById('teamSelect').value;
+    fetch(`/add-to-team/${teamId}/${selectedPokemonId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addToTeamModal'));
+            modal.hide();
+            alert('Pokemon added to team!');
+        } else {
+            alert(data.message || 'Error adding Pokemon to team');
+        }
+    });
+}
+</script>
+{% endblock %}
