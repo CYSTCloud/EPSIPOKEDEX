@@ -6,7 +6,6 @@
 {% block content %}
 <div class="container py-5">
     <div class="row">
-        <!-- Pokemon Image -->
         <div class="col-md-6 text-center">
             <img src="{{ pokemon.sprite_url }}" alt="{{ pokemon.name }}" class="img-fluid mb-3" style="width: 300px;">
             <h1 class="display-4">{{ pokemon.name }}</h1>
@@ -16,8 +15,6 @@
                 {% endfor %}
             </div>
         </div>
-        
-        <!-- Pokemon Stats -->
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -52,8 +49,6 @@
         </div>
     </div>
 </div>
-
-<!-- Add to Team Modal -->
 {% if user.is_authenticated %}
 <div class="modal fade" id="addToTeamModal" tabindex="-1">
     <div class="modal-dialog">

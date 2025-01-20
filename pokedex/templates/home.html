@@ -4,7 +4,6 @@
 {% block title %}Pokedex - Accueil{% endblock %}
 
 {% block content %}
-<!-- Header-->
 <header class="bg-dark py-5">
     <div class="container px-4 px-lg-5 my-5">
         <div class="text-center text-white">
@@ -13,7 +12,6 @@
         </div>
     </div>
 </header>
-<!-- Section-->
 <section class="py-5">
     <div class="container px-4 px-lg-5 mt-5">
         {% if error_message %}
@@ -26,14 +24,10 @@
             {% for pokemon in pokemons.object_list %}
             <div class="col mb-5">
                 <div class="card h-100">
-                    <!-- Pokemon image-->
                     <img class="card-img-top" src="{{ pokemon.sprite_url }}" alt="{{ pokemon.name }}">
-                    <!-- Pokemon details-->
                     <div class="card-body p-4">
                         <div class="text-center">
-                            <!-- Pokemon name-->
                             <h5 class="fw-bolder">{{ pokemon.name|title }}</h5>
-                            <!-- Pokemon types-->
                             <div class="types">
                                 {% for type in pokemon.types.all %}
                                 <span class="badge bg-primary">{{ type.name }}</span>
@@ -41,7 +35,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Product actions-->
                     <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
                         <div class="text-center">
                             <a class="btn btn-outline-dark mt-auto" href="{% url 'pokemon_detail' pokemon.id %}">Voir les détails</a>
@@ -51,8 +44,6 @@
             </div>
             {% endfor %}
         </div>
-        
-        <!-- Pagination -->
         <nav aria-label="Page navigation" class="mt-4">
             <ul class="pagination justify-content-center">
                 {% if pokemons.has_previous %}
@@ -108,8 +99,6 @@
                 {% endif %}
             </ul>
         </nav>
-        
-        <!-- Page Info -->
         <div class="text-center mt-3">
             <p class="text-muted">
                 Affichage de la page {{ pokemons.number }} sur {{ pokemons.paginator.num_pages }}

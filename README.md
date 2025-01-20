@@ -21,7 +21,7 @@ Une application web Django permettant aux utilisateurs de parcourir les Pokémon
 
 1. Cloner le dépôt :
 ```bash
-git clone https://github.com/votre-nom/pokedex.git
+git clone ssh
 cd pokedex
 ```
 
