@@ -77,8 +77,6 @@
         {% endfor %}
     </div>
 </div>
-
-<!-- Modal Création d'Équipe -->
 <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -102,8 +100,6 @@
         </div>
     </div>
 </div>
-
-<!-- Modal Ajout de Pokémon -->
 <div class="modal fade" id="addPokemonModal" tabindex="-1" aria-labelledby="addPokemonModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -116,14 +112,11 @@
                     <input type="text" class="form-control" id="pokemonSearch" placeholder="Rechercher un Pokémon...">
                 </div>
                 <div id="pokemonList" class="row row-cols-2 row-cols-md-3 g-3">
-                    <!-- Les Pokémon seront chargés ici dynamiquement -->
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Modal Suppression d'Équipe -->
 <div class="modal fade" id="deleteTeamModal" tabindex="-1" aria-labelledby="deleteTeamModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -148,7 +141,6 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gestion de la suppression d'équipe
     const deleteTeamModal = document.getElementById('deleteTeamModal');
     deleteTeamModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
@@ -156,8 +148,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = deleteTeamModal.querySelector('#deleteTeamForm');
         form.action = form.action.replace('/0', `/${teamId}`);
     });
-
-    // Gestion de la recherche de Pokémon
     const pokemonSearch = document.getElementById('pokemonSearch');
     const pokemonList = document.getElementById('pokemonList');
     let currentTeamId = null;

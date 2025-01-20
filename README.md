@@ -8,7 +8,6 @@ Une application web Django permettant aux utilisateurs de parcourir les Pokémon
 - Créer et gérer des équipes de Pokémon
 - Système de combat entre équipes
 - Authentification des utilisateurs
-- Interface entièrement en français
 
 ## Technologies Utilisées
 - Django 4.2

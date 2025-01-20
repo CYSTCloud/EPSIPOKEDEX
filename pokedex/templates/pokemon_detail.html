@@ -10,7 +10,7 @@
             <img src="{{ pokemon.sprite_url }}" alt="{{ pokemon.name }}" class="img-fluid mb-3" style="width: 300px;">
             <h1 class="display-4">{{ pokemon.name }}</h1>
             <div class="mb-3">
-                {% for type in pokemon.types %}
+                {% for type in pokemon.get_types %}
                 <span class="badge bg-primary fs-5 me-2">{{ type }}</span>
                 {% endfor %}
             </div>
@@ -18,10 +18,19 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h3 class="card-title mb-4">Stats</h3>
+                    <h3 class="card-title mb-4">Statistiques</h3>
                     {% for stat_name, stat_value in pokemon.stats.items %}
                     <div class="mb-3">
-                        <label class="form-label text-capitalize">{{ stat_name }}</label>
+                        <label class="form-label text-capitalize">
+                            {% if stat_name == 'hp' %}Points de vie
+                            {% elif stat_name == 'attack' %}Attaque
+                            {% elif stat_name == 'defense' %}Défense
+                            {% elif stat_name == 'special-attack' %}Attaque Spéciale
+                            {% elif stat_name == 'special-defense' %}Défense Spéciale
+                            {% elif stat_name == 'speed' %}Vitesse
+                            {% else %}{{ stat_name }}
+                            {% endif %}
+                        </label>
                         <div class="progress">
                             <div class="progress-bar" role="progressbar" style="width: {{ stat_value }}%"
                                 aria-valuenow="{{ stat_value }}" aria-valuemin="0" aria-valuemax="100">
@@ -32,15 +41,15 @@
                     {% endfor %}
                     
                     <div class="mt-4">
-                        <h4>Physical Characteristics</h4>
-                        <p><strong>Height:</strong> {{ pokemon.height|floatformat:1 }} m</p>
-                        <p><strong>Weight:</strong> {{ pokemon.weight|floatformat:1 }} kg</p>
+                        <h4>Caractéristiques Physiques</h4>
+                        <p><strong>Taille:</strong> {{ pokemon.height|floatformat:1 }} m</p>
+                        <p><strong>Poids:</strong> {{ pokemon.weight|floatformat:1 }} kg</p>
                     </div>
                     
                     {% if user.is_authenticated %}
                     <div class="mt-4">
                         <button class="btn btn-primary" onclick="showAddToTeamModal({{ pokemon.pokemon_id }})">
-                            Add to Team
+                            Ajouter à l'équipe
                         </button>
                     </div>
                     {% endif %}
@@ -49,12 +58,13 @@
         </div>
     </div>
 </div>
+
 {% if user.is_authenticated %}
 <div class="modal fade" id="addToTeamModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add to Team</h5>
+                <h5 class="modal-title">Ajouter à l'équipe</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -63,11 +73,11 @@
                     <option value="{{ team.id }}">{{ team.name }}</option>
                     {% endfor %}
                 </select>
-                <button class="btn btn-primary" onclick="createNewTeam()">Create New Team</button>
+                <button class="btn btn-primary" onclick="createNewTeam()">Créer une nouvelle équipe</button>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="addToTeam()">Add to Team</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" onclick="addToTeam()">Ajouter à l'équipe</button>
             </div>
         </div>
     </div>
@@ -80,7 +90,7 @@
 let selectedPokemonId = {{ pokemon.pokemon_id }};
 
 function createNewTeam() {
-    const teamName = prompt('Enter team name:');
+    const teamName = prompt('Entrez le nom de l\'équipe:');
     if (teamName) {
         fetch('{% url "create_team" %}', {
             method: 'POST',
@@ -101,7 +111,7 @@ function createNewTeam() {
 
 function addToTeam() {
     const teamId = document.getElementById('teamSelect').value;
-    fetch(`/add-to-team/${teamId}/${selectedPokemonId}/`, {
+    fetch(`/team/${teamId}/add/${selectedPokemonId}/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}'
@@ -109,12 +119,10 @@ function addToTeam() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'success') {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addToTeamModal'));
-            modal.hide();
-            alert('Pokemon added to team!');
+        if (data.success) {
+            location.reload();
         } else {
-            alert(data.message || 'Error adding Pokemon to team');
+            alert(data.error || 'Une erreur est survenue');
         }
     });
 }
