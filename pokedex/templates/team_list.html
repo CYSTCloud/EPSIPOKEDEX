@@ -4,6 +4,7 @@
 {% block title %}Mes Équipes Pokémon{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="container py-5">
     <div class="row mb-4">
         <div class="col">
@@ -41,7 +42,7 @@
                             <span>{{ pokemon.name|title }}</span>
                             <button class="btn btn-sm btn-outline-danger ms-auto remove-pokemon" 
                                     data-team-id="{{ team.id }}" 
-                                    data-pokemon-id="{{ pokemon.id }}"
+                                    data-pokemon-id="{{ pokemon.pokemon_id }}"
                                     title="Retirer de l'équipe">
                                 <i class="bi bi-x"></i>
                             </button>
@@ -221,6 +222,38 @@ function addPokemonToTeam(teamId, pokemonId) {
         alert('Échec de l\'ajout du Pokémon à l\'équipe. Veuillez réessayer.');
     });
 }
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestionnaire pour supprimer un Pokémon
+    document.querySelectorAll('.remove-pokemon').forEach(button => {
+        button.addEventListener('click', function() {
+            const teamId = this.getAttribute('data-team-id');
+            const pokemonId = this.getAttribute('data-pokemon-id');
+
+            fetch(`/teams/${teamId}/remove_pokemon/${pokemonId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Recharge la page pour actualiser la liste des Pokémon
+                } else {
+                    alert(data.error || "Erreur lors de la suppression du Pokémon.");
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert("Erreur lors de la suppression. Veuillez réessayer.");
+            });
+        });
+    });
+});
+
 </script>
 {% endblock %}
 {% endblock %}

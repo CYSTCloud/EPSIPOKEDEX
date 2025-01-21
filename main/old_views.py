@@ -23,7 +23,7 @@ def home(request):
         page_number = int(page)
         offset = (page_number - 1) * page_size
         
-        if search_query:
+        if search_query: 
             try:
                 if search_query.isdigit():
                     pokemon_id = int(search_query)
@@ -262,9 +262,12 @@ def get_battle_teams(request, team_id):
         'pokemon': [{
             'name': tp.pokemon.name,
             'sprite_url': tp.pokemon.sprite_url,
-            'hp': random.randint(50, 100),
-            'attack': random.randint(40, 80),
-            'defense': random.randint(30, 60)
+            'hp': tp.pokemon.stats['hp'],
+            'attack': tp.pokemon.stats['attack'],
+            'special_attack': tp.pokemon.stats['special-attack'],
+            'defense': tp.pokemon.stats['defense'],
+            'special_defense': tp.pokemon.stats['special-defense'],
+            'speed': tp.pokemon.stats['speed']
         } for tp in team.teampokemon_set.all()]
     }
     
@@ -275,9 +278,12 @@ def get_battle_teams(request, team_id):
         'pokemon': [{
             'name': pokemon.name,
             'sprite_url': pokemon.sprite_url,
-            'hp': random.randint(50, 100),
-            'attack': random.randint(40, 80),
-            'defense': random.randint(30, 60)
+            'hp': pokemon.stats['hp'],
+            'attack': pokemon.stats['attack'],
+            'special_attack': pokemon.stats['special-attack'],
+            'defense': pokemon.stats['defense'],
+            'special_defense': pokemon.stats['special-defense'],
+            'speed': pokemon.stats['speed']
         } for pokemon in opponent_pokemon]
     }
     
@@ -292,18 +298,26 @@ def start_battle(request, team_id):
     battle_log = []
     
     team_pokemon = [{
+        'sprite_url': tp.pokemon.sprite_url,
         'name': tp.pokemon.name,
-        'hp': random.randint(50, 100),
-        'attack': random.randint(40, 80),
-        'defense': random.randint(30, 60)
+        'hp': tp.pokemon.stats['hp'],
+        'attack': tp.pokemon.stats['attack'],
+        'special_attack': tp.pokemon.stats['special-attack'],
+        'defense': tp.pokemon.stats['defense'],
+        'special_defense': tp.pokemon.stats['special-defense'],
+        'speed': tp.pokemon.stats['speed']
     } for tp in team.teampokemon_set.all()]
     
     all_pokemon = list(Pokemon.objects.all())
     opponent_pokemon = [{
         'name': pokemon.name,
-        'hp': random.randint(50, 100),
-        'attack': random.randint(40, 80),
-        'defense': random.randint(30, 60)
+        'sprite_url': pokemon.sprite_url,
+        'hp': pokemon.stats['hp'],
+        'attack': pokemon.stats['attack'],
+        'special_attack': pokemon.stats['special-attack'],
+        'defense': pokemon.stats['defense'],
+        'special_defense': pokemon.stats['special-defense'],
+        'speed': pokemon.stats['speed']
     } for pokemon in random.sample(all_pokemon, min(5, len(all_pokemon)))]
     
     round = 1
