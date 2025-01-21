@@ -200,13 +200,9 @@ def add_to_team(request, team_id, pokemon_id):
 @login_required
 def remove_from_team(request, team_id, pokemon_id):
     if request.method == 'POST':
-        team_pokemon = get_object_or_404(
-            TeamPokemon,
-            team__id=team_id,
-            team__user=request.user,
-            pokemon__id=pokemon_id
-        )
-        team_pokemon.delete()
+        team = get_object_or_404(Team, id=team_id, user=request.user)
+        pokemon = get_object_or_404(Pokemon, pokemon_id=pokemon_id)
+        TeamPokemon.objects.filter(team=team, pokemon=pokemon).delete()
         
         remaining_pokemon = TeamPokemon.objects.filter(team_id=team_id).order_by('position')
         for i, tp in enumerate(remaining_pokemon, 1):
@@ -223,10 +219,21 @@ def pokemon_search_api(request):
     if not query:
         return JsonResponse({'error': 'Le paramètre de requête est requis'}, status=400)
     
-    pokemon_list = list(Pokemon.objects.filter(
-        name__icontains=query
-    ).values('id', 'name', 'sprite_url')[:10])
+    # On utilise un set pour stocker les IDs déjà traités
+    processed_ids = set()
+    pokemon_list = []
     
+    # Recherche dans la base de données locale
+    local_pokemon = Pokemon.objects.filter(name__icontains=query)[:10]
+    for pokemon in local_pokemon:
+        processed_ids.add(pokemon.pokemon_id)
+        pokemon_list.append({
+            'id': pokemon.pokemon_id,
+            'name': pokemon.name,
+            'sprite_url': pokemon.sprite_url
+        })
+    
+    # Si on a moins de 5 résultats, on cherche dans l'API
     if len(pokemon_list) < 5:
         api_response = PokeAPIService.get_pokemon_list(limit=1000, offset=0)
         if api_response and 'results' in api_response:
@@ -237,15 +244,16 @@ def pokemon_search_api(request):
             
             for pokemon_data in matching_pokemon:
                 pokemon_id = int(pokemon_data['url'].split('/')[-2])
-                pokemon = PokeAPIService.get_or_create_pokemon(pokemon_id)
-                if pokemon:
-                    pokemon_dict = {
-                        'id': pokemon.id,
-                        'name': pokemon.name,
-                        'sprite_url': pokemon.sprite_url
-                    }
-                    if pokemon_dict not in pokemon_list:
-                        pokemon_list.append(pokemon_dict)
+                # On vérifie si on n'a pas déjà ce Pokémon
+                if pokemon_id not in processed_ids:
+                    pokemon = PokeAPIService.get_or_create_pokemon(pokemon_id)
+                    if pokemon:
+                        processed_ids.add(pokemon_id)
+                        pokemon_list.append({
+                            'id': pokemon.pokemon_id,
+                            'name': pokemon.name,
+                            'sprite_url': pokemon.sprite_url
+                        })
     
     return JsonResponse(pokemon_list, safe=False)
 

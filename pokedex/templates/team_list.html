@@ -4,6 +4,7 @@
 {% block title %}Mes Équipes Pokémon{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="container py-5">
     <div class="row mb-4">
         <div class="col">
@@ -41,7 +42,7 @@
                             <span>{{ pokemon.name|title }}</span>
                             <button class="btn btn-sm btn-outline-danger ms-auto remove-pokemon" 
                                     data-team-id="{{ team.id }}" 
-                                    data-pokemon-id="{{ pokemon.id }}"
+                                    data-pokemon-id="{{ pokemon.pokemon_id }}"
                                     title="Retirer de l'équipe">
                                 <i class="bi bi-x"></i>
                             </button>
@@ -204,7 +205,6 @@ function addPokemonToTeam(teamId, pokemonId) {
     fetch(`/teams/${teamId}/add_pokemon/${pokemonId}/`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
     })
