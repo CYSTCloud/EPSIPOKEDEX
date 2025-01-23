@@ -12,8 +12,11 @@ urlpatterns = [
     path('battle/', battle.battle, name='battle'),
     path('battle/team/<int:team_id>/', battle.get_battle_teams, name='get_battle_teams'),
     path('battle/start/<int:team_id>/', battle.start_battle, name='start_battle'),
+    path('battle/action/<int:team_id>/', battle.action, name='action'),
+    
     # API endpoints
     path('api/pokemon/search/', pokemon.pokemon_search_api, name='pokemon_search_api'),
+
     # Auth
     path('accounts/register/', user.register, name='register'),
     path('accounts/logout/', user.logout_view, name='logout'),
