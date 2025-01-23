@@ -48,7 +48,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">Équipe Adverse</h5>
-                    <button id="resetOpponentTeam" class="btn btn-warning btn-sm">Réinitialiser les Équipes</button>
+                    <button id="resetOpponentTeam" class="btn btn-warning btn-sm">Réinitialiser le combat</button>
                 </div>
                 <div class="card-body">
                     <div id="opponentTeamDisplay" class="d-none">
@@ -128,6 +128,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 displayTeam(data.team, document.getElementById('yourTeamDisplay'));
                 displayTeam(data.opponent, document.getElementById('opponentTeamDisplay'));
+
+                logContainer.innerHTML = "<p>Le combat n'a pas encore commencé.</p>";
             });
     });
 

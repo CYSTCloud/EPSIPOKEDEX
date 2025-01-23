@@ -45,7 +45,9 @@ def get_battle_teams(request, team_id):
     if reset_opponent:
         team_data = get_team_data(team)   
         request.session['team_data'] = team_data
+        request.session['origin_team'] = team_data
         request.session.modified = True
+        request.session['battle_log'] = []
 
     if reset_opponent or 'opponent_team' not in request.session:
         all_pokemon = list(Pokemon.objects.all())
