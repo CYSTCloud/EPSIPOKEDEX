@@ -17,6 +17,16 @@ def execute_turn(request, team, opponent, action):
     player_pokemon = team[0] if team else None
     opponent_pokemon = opponent[0] if opponent else None
 
+    if not team or not opponent:
+        turn_log.append("Le combat est terminé.")
+        
+        return {
+            'team': team,
+            'opponent': opponent,
+            'log': [],
+            'winner': 'Équipe adverse' if not team else 'Votre équipe'
+        }
+    
     if not player_pokemon or not opponent_pokemon:
         turn_log.append("Un des camps n'a plus de Pokémon, fin du combat.")
         return {

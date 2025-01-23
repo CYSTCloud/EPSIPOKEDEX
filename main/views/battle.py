@@ -37,6 +37,7 @@ def get_battle_teams(request, team_id):
     else:
         team_data = get_team_data(team)   
         request.session['team_data'] = team_data
+        request.session['origin_team'] = team_data
         request.session.modified = True
             
     reset_opponent = request.GET.get('reset', 'false').lower() == 'true'
@@ -63,6 +64,7 @@ def get_battle_teams(request, team_id):
             } for pokemon in opponent_pokemon]
         }
         request.session['opponent_team'] = opponent_data
+        request.session['origin_opponent'] = opponent_data
         request.session.modified = True
     else:
         opponent_data = request.session['opponent_team']
