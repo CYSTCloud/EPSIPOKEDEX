@@ -25,7 +25,6 @@
         Vous devez d'abord créer une équipe ! <a href="{% url 'team_list' %}">Aller aux Équipes</a>
     </div>
     {% else %}
-    {% csrf_token %}
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-4">
@@ -49,6 +48,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">Équipe Adverse</h5>
+                    <button id="resetOpponentTeam" class="btn btn-warning btn-sm">Réinitialiser le combat</button>
                 </div>
                 <div class="card-body">
                     <div id="opponentTeamDisplay" class="d-none">
@@ -62,91 +62,116 @@
     <div class="text-center mt-4">
         <button id="startBattle" class="btn btn-primary btn-lg" disabled>Commencer le Combat</button>
     </div>
+    {% endif %}
+</div>
 
-    <!-- Modal Résultats du Combat -->
-    <div class="modal fade" id="battleResultModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Résultats du Combat</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<!-- Modal de combat -->
+<div class="modal fade" id="battleModal" tabindex="-1" aria-labelledby="battleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="battleModalLabel">Combat Pokémon</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="battleControls" class="text-center">
+                    <h4>Choisissez une action :</h4>
+                    <button class="btn btn-danger m-2 action-button" data-action="attaque">Attaque</button>
+                    <button class="btn btn-success m-2 action-button" data-action="défense">Défense</button>
                 </div>
-                <div class="modal-body">
-                    <div id="battleResults"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fermer</button>
+                <div id="battleLog" class="mt-4" style="height: 200px; overflow-y: auto;">
+                    <h4>Journal du Combat :</h4>
+                    <div class="border p-3" id="logContainer">
+                        <p>Le combat n'a pas encore commencé.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const teamSelect = document.getElementById('teamSelect');
     const startBattle = document.getElementById('startBattle');
-    const yourTeamDisplay = document.getElementById('yourTeamDisplay');
-    const opponentTeamDisplay = document.getElementById('opponentTeamDisplay');
-    const battleResultModal = new bootstrap.Modal(document.getElementById('battleResultModal'));
-    
+    const battleModal = new bootstrap.Modal(document.getElementById('battleModal'));
+    const logContainer = document.getElementById('logContainer');
+    const battleControls = document.getElementById('battleControls');
+    const resetOpponentTeam = document.getElementById('resetOpponentTeam');
+
     teamSelect.addEventListener('change', function() {
         if (this.value) {
             fetch(`/battle/team/${this.value}/`)
                 .then(response => response.json())
                 .then(data => {
-                    displayTeam(data.team, yourTeamDisplay);
-                    displayTeam(data.opponent, opponentTeamDisplay);
+                    displayTeam(data.team, document.getElementById('yourTeamDisplay'));
+                    displayTeam(data.opponent, document.getElementById('opponentTeamDisplay'));
                     startBattle.disabled = false;
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Échec du chargement des équipes. Veuillez réessayer.');
                 });
-        } else {
-            yourTeamDisplay.classList.add('d-none');
-            opponentTeamDisplay.classList.add('d-none');
-            startBattle.disabled = true;
         }
     });
 
     startBattle.addEventListener('click', function() {
-        const teamId = teamSelect.value;
-        startBattle.disabled = true;
-        startBattle.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Combat en cours...';
+        battleModal.show();
+        fetch(`/battle/team/${teamSelect.value}/`)
+            .then(response => response.json())
+            .then(data => {
+                battleControls.classList.remove('d-none');
+            });
+    });
 
-        fetch(`/battle/start/${teamId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            const resultHtml = `
-                <h4 class="text-center mb-4">${data.winner} Gagne !</h4>
-                <div class="battle-log">
-                    ${data.log.map(entry => `<p>${entry}</p>`).join('')}
-                </div>
-            `;
-            document.getElementById('battleResults').innerHTML = resultHtml;
-            battleResultModal.show();
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            alert('Le combat a échoué. Veuillez réessayer.');
-        })
-        .finally(() => {
-            startBattle.disabled = false;
-            startBattle.innerHTML = 'Commencer le Combat';
+    resetOpponentTeam.addEventListener('click', function() {
+        fetch(`/battle/team/${teamSelect.value}/?reset=true`)
+            .then(response => response.json())
+            .then(data => {
+                displayTeam(data.team, document.getElementById('yourTeamDisplay'));
+                displayTeam(data.opponent, document.getElementById('opponentTeamDisplay'));
+
+                logContainer.innerHTML = "<p>Le combat n'a pas encore commencé.</p>";
+            });
+    });
+
+    document.querySelectorAll('.action-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.getAttribute('data-action');
+            const teamId = teamSelect.value;
+
+            fetch(`/battle/action/${teamId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    updateLog(data.log);
+                    if (data.winner) {
+                        alert(`${data.winner} a gagné le combat !`);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Un problème est survenu. Veuillez réessayer.');
+            });
         });
     });
 
+    function updateLog(messages) {
+        logContainer.innerHTML += messages.map(msg => `<p>${msg}</p>`).join('');
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
     function displayTeam(team, container) {
-        const html = team.pokemon.map(pokemon => `
+        container.classList.remove('d-none');
+        container.querySelector('.pokemon-list').innerHTML = team.pokemon.map(pokemon => `
             <div class="d-flex align-items-center mb-2">
                 <img src="${pokemon.sprite_url}" alt="${pokemon.name}" style="width: 50px;">
                 <span class="ms-2">${pokemon.name}</span>
@@ -157,11 +182,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `).join('');
-        
-        container.querySelector('.pokemon-list').innerHTML = html;
-        container.classList.remove('d-none');
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 });
 </script>
-{% endblock %}
 {% endblock %}

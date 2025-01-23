@@ -23,7 +23,7 @@ def home(request):
         page_number = int(page)
         offset = (page_number - 1) * page_size
         
-        if search_query:
+        if search_query: 
             try:
                 if search_query.isdigit():
                     pokemon_id = int(search_query)
@@ -200,9 +200,13 @@ def add_to_team(request, team_id, pokemon_id):
 @login_required
 def remove_from_team(request, team_id, pokemon_id):
     if request.method == 'POST':
-        team = get_object_or_404(Team, id=team_id, user=request.user)
-        pokemon = get_object_or_404(Pokemon, pokemon_id=pokemon_id)
-        TeamPokemon.objects.filter(team=team, pokemon=pokemon).delete()
+        team_pokemon = get_object_or_404(
+            TeamPokemon,
+            team__id=team_id,
+            team__user=request.user,
+            pokemon__id=pokemon_id
+        )
+        team_pokemon.delete()
         
         remaining_pokemon = TeamPokemon.objects.filter(team_id=team_id).order_by('position')
         for i, tp in enumerate(remaining_pokemon, 1):
@@ -219,21 +223,10 @@ def pokemon_search_api(request):
     if not query:
         return JsonResponse({'error': 'Le paramètre de requête est requis'}, status=400)
     
-    # On utilise un set pour stocker les IDs déjà traités
-    processed_ids = set()
-    pokemon_list = []
+    pokemon_list = list(Pokemon.objects.filter(
+        name__icontains=query
+    ).values('id', 'name', 'sprite_url')[:10])
     
-    # Recherche dans la base de données locale
-    local_pokemon = Pokemon.objects.filter(name__icontains=query)[:10]
-    for pokemon in local_pokemon:
-        processed_ids.add(pokemon.pokemon_id)
-        pokemon_list.append({
-            'id': pokemon.pokemon_id,
-            'name': pokemon.name,
-            'sprite_url': pokemon.sprite_url
-        })
-    
-    # Si on a moins de 5 résultats, on cherche dans l'API
     if len(pokemon_list) < 5:
         api_response = PokeAPIService.get_pokemon_list(limit=1000, offset=0)
         if api_response and 'results' in api_response:
@@ -244,16 +237,15 @@ def pokemon_search_api(request):
             
             for pokemon_data in matching_pokemon:
                 pokemon_id = int(pokemon_data['url'].split('/')[-2])
-                # On vérifie si on n'a pas déjà ce Pokémon
-                if pokemon_id not in processed_ids:
-                    pokemon = PokeAPIService.get_or_create_pokemon(pokemon_id)
-                    if pokemon:
-                        processed_ids.add(pokemon_id)
-                        pokemon_list.append({
-                            'id': pokemon.pokemon_id,
-                            'name': pokemon.name,
-                            'sprite_url': pokemon.sprite_url
-                        })
+                pokemon = PokeAPIService.get_or_create_pokemon(pokemon_id)
+                if pokemon:
+                    pokemon_dict = {
+                        'id': pokemon.id,
+                        'name': pokemon.name,
+                        'sprite_url': pokemon.sprite_url
+                    }
+                    if pokemon_dict not in pokemon_list:
+                        pokemon_list.append(pokemon_dict)
     
     return JsonResponse(pokemon_list, safe=False)
 
@@ -270,9 +262,12 @@ def get_battle_teams(request, team_id):
         'pokemon': [{
             'name': tp.pokemon.name,
             'sprite_url': tp.pokemon.sprite_url,
-            'hp': random.randint(50, 100),
-            'attack': random.randint(40, 80),
-            'defense': random.randint(30, 60)
+            'hp': tp.pokemon.stats['hp'],
+            'attack': tp.pokemon.stats['attack'],
+            'special_attack': tp.pokemon.stats['special-attack'],
+            'defense': tp.pokemon.stats['defense'],
+            'special_defense': tp.pokemon.stats['special-defense'],
+            'speed': tp.pokemon.stats['speed']
         } for tp in team.teampokemon_set.all()]
     }
     
@@ -283,9 +278,12 @@ def get_battle_teams(request, team_id):
         'pokemon': [{
             'name': pokemon.name,
             'sprite_url': pokemon.sprite_url,
-            'hp': random.randint(50, 100),
-            'attack': random.randint(40, 80),
-            'defense': random.randint(30, 60)
+            'hp': pokemon.stats['hp'],
+            'attack': pokemon.stats['attack'],
+            'special_attack': pokemon.stats['special-attack'],
+            'defense': pokemon.stats['defense'],
+            'special_defense': pokemon.stats['special-defense'],
+            'speed': pokemon.stats['speed']
         } for pokemon in opponent_pokemon]
     }
     
@@ -300,18 +298,26 @@ def start_battle(request, team_id):
     battle_log = []
     
     team_pokemon = [{
+        'sprite_url': tp.pokemon.sprite_url,
         'name': tp.pokemon.name,
-        'hp': random.randint(50, 100),
-        'attack': random.randint(40, 80),
-        'defense': random.randint(30, 60)
+        'hp': tp.pokemon.stats['hp'],
+        'attack': tp.pokemon.stats['attack'],
+        'special_attack': tp.pokemon.stats['special-attack'],
+        'defense': tp.pokemon.stats['defense'],
+        'special_defense': tp.pokemon.stats['special-defense'],
+        'speed': tp.pokemon.stats['speed']
     } for tp in team.teampokemon_set.all()]
     
     all_pokemon = list(Pokemon.objects.all())
     opponent_pokemon = [{
         'name': pokemon.name,
-        'hp': random.randint(50, 100),
-        'attack': random.randint(40, 80),
-        'defense': random.randint(30, 60)
+        'sprite_url': pokemon.sprite_url,
+        'hp': pokemon.stats['hp'],
+        'attack': pokemon.stats['attack'],
+        'special_attack': pokemon.stats['special-attack'],
+        'defense': pokemon.stats['defense'],
+        'special_defense': pokemon.stats['special-defense'],
+        'speed': pokemon.stats['speed']
     } for pokemon in random.sample(all_pokemon, min(5, len(all_pokemon)))]
     
     round = 1
