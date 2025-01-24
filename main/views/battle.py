@@ -32,22 +32,17 @@ def get_team_data(team):
 @login_required
 def get_battle_teams(request, team_id):
     team = get_object_or_404(Team, id=team_id, user=request.user)
-    if 'team_data' in request.session:
-        team_data = request.session['team_data']
-    else:
-        team_data = get_team_data(team)   
-        request.session['team_data'] = team_data
-        request.session['origin_team'] = team_data
-        request.session.modified = True
+    
+    # Toujours réinitialiser les logs au début d'une nouvelle bataille
+    request.session['battle_log'] = []
+    
+    # Réinitialiser les données de l'équipe
+    team_data = get_team_data(team)   
+    request.session['team_data'] = team_data
+    request.session['origin_team'] = team_data
+    request.session.modified = True
             
     reset_opponent = request.GET.get('reset', 'false').lower() == 'true'
-
-    if reset_opponent:
-        team_data = get_team_data(team)   
-        request.session['team_data'] = team_data
-        request.session['origin_team'] = team_data
-        request.session.modified = True
-        request.session['battle_log'] = []
 
     if reset_opponent or 'opponent_team' not in request.session:
         all_pokemon = list(Pokemon.objects.all())
@@ -62,7 +57,8 @@ def get_battle_teams(request, team_id):
                 'special_attack': pokemon.stats['special-attack'],
                 'defense': pokemon.stats['defense'],
                 'special_defense': pokemon.stats['special-defense'],
-                'speed': pokemon.stats['speed']
+                'speed': pokemon.stats['speed'],
+                'effects': {}  # Initialiser les effets vides
             } for pokemon in opponent_pokemon]
         }
         request.session['opponent_team'] = opponent_data
@@ -70,6 +66,9 @@ def get_battle_teams(request, team_id):
         request.session.modified = True
     else:
         opponent_data = request.session['opponent_team']
+        # Réinitialiser les effets pour l'équipe adverse existante
+        for pokemon in opponent_data['pokemon']:
+            pokemon['effects'] = {}
     
     return JsonResponse({'team': team_data, 'opponent': opponent_data})
 
@@ -78,18 +77,29 @@ def start_battle(request, team_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'Méthode de requête invalide'}, status=405)
     
-    team = get_object_or_404(Team, id=team_id, user=request.user)
+    # Réinitialiser les logs au début du combat
+    request.session['battle_log'] = []
     battle_log = []
+    
+    team = get_object_or_404(Team, id=team_id, user=request.user)
     
     team_pokemon = request.session.get('team_data', {}).get('pokemon', [])
     if not team_pokemon:
         return JsonResponse({'error': 'Équipe non trouvée dans la session'}, status=400)
+    
+    # Réinitialiser les effets pour l'équipe du joueur
+    for pokemon in team_pokemon:
+        pokemon['effects'] = {}
+        
     opponent_team = request.session.get('opponent_team')
-
     if not opponent_team:
         return JsonResponse({'error': 'Équipe adverse non trouvée dans la session'}, status=400)
+    
+    # Réinitialiser les effets pour l'équipe adverse
     opponent_pokemon = opponent_team['pokemon']
-
+    for pokemon in opponent_pokemon:
+        pokemon['effects'] = {}
+    
     round = 1
     while team_pokemon and opponent_pokemon:
         battle_log.append(f"Tour {round}")

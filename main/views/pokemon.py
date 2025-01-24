@@ -8,7 +8,16 @@ def pokemon_detail(request, pokemon_id):
     pokemon = PokeAPIService.get_or_create_pokemon(pokemon_id)
     if not pokemon:
         raise Http404("Pokémon non trouvé")
-    return render(request, 'pokemon_detail.html', {'pokemon': pokemon})
+    
+    # Récupérer les équipes de l'utilisateur s'il est connecté
+    teams = []
+    if request.user.is_authenticated:
+        teams = request.user.team_set.all()
+    
+    return render(request, 'pokemon_detail.html', {
+        'pokemon': pokemon,
+        'teams': teams
+    })
 
 @login_required
 def pokemon_search_api(request):

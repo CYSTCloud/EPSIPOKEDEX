@@ -69,7 +69,7 @@
             </div>
             <div class="modal-body">
                 <select id="teamSelect" class="form-select mb-3">
-                    {% for team in user.team_set.all %}
+                    {% for team in teams %}
                     <option value="{{ team.id }}">{{ team.name }}</option>
                     {% endfor %}
                 </select>
@@ -88,6 +88,12 @@
 {% block extra_js %}
 <script>
 let selectedPokemonId = {{ pokemon.pokemon_id }};
+
+function showAddToTeamModal(pokemonId) {
+    selectedPokemonId = pokemonId;
+    const modal = new bootstrap.Modal(document.getElementById('addToTeamModal'));
+    modal.show();
+}
 
 function createNewTeam() {
     const teamName = prompt('Entrez le nom de l\'équipe:');
