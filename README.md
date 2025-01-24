@@ -51,9 +51,9 @@ L'application utilise PokeAPI pour récupérer les données des Pokémon :
 - `Battle` : Données des combats
 
 ## Sécurité
-- Authentification requise pour les actions sensibles
-- Protection CSRF sur les formulaires
-- Gestion des permissions utilisateur
+- Décorateur `@login_required` sur toutes les vues sensibles
+- Sessions sécurisées avec expiration automatique
+- Vérification de l'appartenance des équipes à l'utilisateur connecté
 
 ## Technologies Utilisées
 - Django 4.2
