@@ -117,7 +117,7 @@ function createNewTeam() {
 
 function addToTeam() {
     const teamId = document.getElementById('teamSelect').value;
-    fetch(`/team/${teamId}/add/${selectedPokemonId}/`, {
+    fetch(`/teams/${teamId}/add_pokemon/${selectedPokemonId}/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}'

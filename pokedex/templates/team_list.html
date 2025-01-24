@@ -222,13 +222,20 @@ function addPokemonToTeam(teamId, pokemonId) {
     });
 }
 
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Gestionnaire pour supprimer un Pokémon
     document.querySelectorAll('.remove-pokemon').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
             const teamId = this.getAttribute('data-team-id');
             const pokemonId = this.getAttribute('data-pokemon-id');
+            const pokemonItem = this.closest('.pokemon-item');
+            const pokemonList = pokemonItem.closest('.pokemon-list');
+
+            if (!confirm('Voulez-vous vraiment retirer ce Pokémon de l\'équipe ?')) {
+                return;
+            }
+
+            this.disabled = true;
 
             fetch(`/teams/${teamId}/remove_pokemon/${pokemonId}/`, {
                 method: 'POST',
@@ -237,17 +244,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    location.reload(); // Recharge la page pour actualiser la liste des Pokémon
+                    pokemonItem.remove();
+                    
+                    const remainingPokemon = pokemonList.querySelectorAll('.pokemon-item');
+                    if (remainingPokemon.length < 5 && !pokemonList.querySelector('.add-pokemon')) {
+                        const addButton = document.createElement('button');
+                        addButton.className = 'btn btn-outline-primary w-100 add-pokemon';
+                        addButton.setAttribute('data-team-id', teamId);
+                        addButton.setAttribute('data-bs-toggle', 'modal');
+                        addButton.setAttribute('data-bs-target', '#addPokemonModal');
+                        addButton.innerHTML = '<i class="bi bi-plus"></i> Ajouter un Pokémon';
+                        pokemonList.appendChild(addButton);
+                    }
                 } else {
-                    alert(data.error || "Erreur lors de la suppression du Pokémon.");
+                    throw new Error(data.error || "Erreur lors de la suppression du Pokémon");
                 }
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                alert("Erreur lors de la suppression. Veuillez réessayer.");
+                this.disabled = false;
+                alert(error.message || "Une erreur inattendue s'est produite");
             });
         });
     });
